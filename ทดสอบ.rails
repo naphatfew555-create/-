@@ -1,0 +1,472 @@
+<!DOCTYPE html>
+<html lang="th">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>ลงทะเบียนร้านอาหาร (ฟอร์มเต็มหน้า Firebase)</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script src="https://www.gstatic.com/firebasejs/9.22.0/firebase-app-compat.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/9.22.0/firebase-firestore-compat.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/9.22.0/firebase-storage-compat.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/9.22.0/firebase-auth-compat.js"></script>
+    <style>
+        /* สไตล์สำหรับ input ทั่วไป */
+        .form-input {
+            width: 100%;
+            padding: 0.75rem;
+            border: 1px solid #d1d5db;
+            border-radius: 0.5rem;
+            transition: border-color 0.2s;
+        }
+        .form-input:focus {
+            border-color: #dc2626; /* focus:ring-red-500 */
+            outline: none;
+            box-shadow: 0 0 0 1px #dc2626;
+        }
+        /* สไตล์สำหรับ input file */
+        .file-input-style {
+            file:mr-4 file:py-2 file:px-4 file:rounded-lg file:border-0 
+            file:text-sm file:font-semibold file:bg-gray-200 file:text-gray-700 
+            hover:file:bg-gray-300 cursor:pointer focus:ring-red-500 focus:border-red-500
+        }
+    </style>
+</head>
+<body class="bg-gray-100 flex justify-center py-10 min-h-screen">
+
+    <div class="bg-white rounded-xl p-8 max-w-4xl w-full mx-4 shadow-2xl">
+        
+        <h2 class="text-3xl font-bold mb-8 text-center text-red-700">
+            📝 ลงทะเบียนร้านอาหาร
+        </h2>
+
+        <form onsubmit="registerRestaurant(event)">
+            <div class="grid grid-cols-1 md:grid-cols-2 gap-x-8 gap-y-6">
+
+                <div class="col-span-full border-b border-gray-200 pb-6 mb-4">
+                    <h3 class="text-xl font-semibold mb-4 text-gray-800 border-l-4 border-red-500 pl-3">ข้อมูลทั่วไป</h3>
+                    
+                    <div class="mb-4">
+                        <label class="block text-base font-medium mb-1 text-gray-700">ชื่อร้าน *</label>
+                        <input name="name" type="text" required class="form-input">
+                    </div>
+
+                    <div class="mb-4">
+                        <label class="block text-base font-medium mb-1 text-gray-700">วันเดือนปีที่เข้าร่วม</label>
+                        <div class="flex space-x-2">
+                            <select name="joinDay" id="joinDay" required class="flex-1 form-input">
+                                <option value="">วัน</option>
+                            </select>
+                            <select name="joinMonth" id="joinMonth" required class="flex-1 form-input">
+                                <option value="">เดือน</option>
+                            </select>
+                            <select name="joinYear" id="joinYear" required class="flex-1 form-input">
+                                <option value="">ปี</option>
+                            </select>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="col-span-full border-b border-gray-200 pb-6 mb-4">
+                    <h3 class="text-xl font-semibold mb-4 text-gray-800 border-l-4 border-red-500 pl-3">รายละเอียดอาหาร/ราคา</h3>
+                    
+                    <div class="mb-4">
+                        <label class="block text-base font-medium mb-1 text-gray-700">ลักษณะของอาหารที่ร้าน *</label>
+                        <select name="cuisineType" required class="form-input">
+                            <option value="">เลือกลักษณะอาหาร</option>
+                            <option value="A la carte">A la carte (ตามสั่ง)</option>
+                            <option value="Buffet">Buffet (บุฟเฟ่ต์)</option>
+                            <option value="Both">ทั้งสองแบบ</option>
+                        </select>
+                    </div>
+
+                    <div class="mb-4">
+                        <label class="block text-base font-medium mb-1 text-gray-700">ราคา *</label>
+                        <textarea name="priceRange" required placeholder="ระบุราคาที่ชัดเจน เช่น&#10;- ผู้ใหญ่ 299 บาท/คน&#10;- เด็ก 199 บาท/คน" rows="4" class="form-input resize-none"></textarea>
+                    </div>
+
+                    <div>
+                        <label class="block text-base font-medium mb-1 text-gray-700">เงื่อนไขร้าน</label>
+                        <textarea name="conditions" placeholder="เช่น ทานไม่หมดปรับท่านละ 100 บาท" rows="3" class="form-input resize-none"></textarea>
+                    </div>
+                </div>
+
+                <div class="col-span-full border-b border-gray-200 pb-6 mb-4">
+                    <h3 class="text-xl font-semibold mb-4 text-gray-800 border-l-4 border-red-500 pl-3">เวลาและวันทำการ</h3>
+                    
+                    <label class="block text-base font-medium mb-3 text-gray-700">เวลาเปิด - ปิดร้าน</label>
+                    <div class="flex items-center space-x-4 mb-2">
+                        <input name="openingTime" id="restOpenTime" type="time" class="flex-1 form-input">
+                        <span class="text-gray-500">-</span>
+                        <input name="closingTime" id="restCloseTime" type="time" class="flex-1 form-input">
+                    </div>
+                    <div>
+                        <input type="checkbox" id="open24Hours" name="open24Hours" class="rounded text-red-600 focus:ring-red-500">
+                        <label for="open24Hours" class="text-sm text-gray-700">เปิด 24 ชั่วโมง</label>
+                    </div>
+
+                    <div class="mt-6">
+                        <label class="block text-base font-medium mb-3 text-gray-700">วันที่เปิด-ปิดร้าน</label>
+                        <div class="border border-green-300 bg-green-50 p-4 rounded-lg mb-4">
+                            <label class="inline-flex items-center font-bold text-green-700">
+                                <input type="checkbox" id="openEveryDay" name="openEveryDay" class="rounded text-green-600 focus:ring-green-500 mr-1">
+                                เปิดทุกวัน
+                            </label>
+                        </div>
+                        <div id="daysCheckboxes" class="grid grid-cols-2 sm:grid-cols-4 gap-y-2">
+                            <label class="inline-flex items-center"><input type="checkbox" name="daysOpen[]" value="จันทร์" class="rounded text-red-600 focus:ring-red-500 mr-1"> จันทร์</label>
+                            <label class="inline-flex items-center"><input type="checkbox" name="daysOpen[]" value="อังคาร" class="rounded text-red-600 focus:ring-red-500 mr-1"> อังคาร</label>
+                            <label class="inline-flex items-center"><input type="checkbox" name="daysOpen[]" value="พุธ" class="rounded text-red-600 focus:ring-red-500 mr-1"> พุธ</label>
+                            <label class="inline-flex items-center"><input type="checkbox" name="daysOpen[]" value="พฤหัสบดี" class="rounded text-red-600 focus:ring-red-500 mr-1"> พฤหัสบดี</label>
+                            <label class="inline-flex items-center"><input type="checkbox" name="daysOpen[]" value="ศุกร์" class="rounded text-red-600 focus:ring-red-500 mr-1"> ศุกร์</label>
+                            <label class="inline-flex items-center"><input type="checkbox" name="daysOpen[]" value="เสาร์" class="rounded text-red-600 focus:ring-red-500 mr-1"> เสาร์</label>
+                            <label class="inline-flex items-center"><input type="checkbox" name="daysOpen[]" value="อาทิตย์" class="rounded text-red-600 focus:ring-red-500 mr-1"> อาทิตย์</label>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="col-span-full border-b border-gray-200 pb-6 mb-4">
+                    <h3 class="text-xl font-semibold mb-4 text-gray-800 border-l-4 border-red-500 pl-3">ติดต่อและที่ตั้ง</h3>
+                    
+                    <div class="mb-4">
+                        <label class="block text-base font-medium mb-1 text-gray-700">เบอร์โทรติดต่อร้าน *</label>
+                        <input name="phoneNumber" type="tel" required class="form-input">
+                    </div>
+
+                    <div class="mb-4">
+                        <label class="block text-base font-medium mb-1 text-gray-700">ที่ตั้งร้าน *</label>
+                        <textarea name="address" required rows="4" class="form-input resize-none"></textarea>
+                    </div>
+
+                    <div class="mb-4">
+                        <label class="block text-base font-medium mb-1 text-gray-700">ลิงก์เส้นทาง Google Maps</label>
+                        <input name="googleMapsLink" type="url" placeholder="URL ของ Google Maps" class="form-input">
+                    </div>
+
+                    <div>
+                        <label class="block text-base font-medium mb-1 text-gray-700">ลิงก์ Facebook (ไม่บังคับ)</label>
+                        <input name="facebookLink" type="url" placeholder="https://facebook.com/..." class="form-input">
+                    </div>
+                </div>
+
+                <div class="col-span-full border-b border-gray-200 pb-6 mb-4">
+                    <h3 class="text-xl font-semibold mb-4 text-gray-800 border-l-4 border-red-500 pl-3">รูปภาพร้าน</h3>
+                    <label class="block text-base font-medium mb-1 text-gray-700">รูปภาพร้าน (แนบได้สูงสุด 30 รูป) *</label>
+                    <input name="images" type="file" multiple accept="image/*" required class="w-full p-3 border border-gray-300 rounded-lg file-input-style">
+                    <p class="text-xs text-gray-500 mt-1">รูปภาพหลักสำหรับแสดงผลและรูปภาพประกอบ</p>
+                </div>
+
+                <div class="col-span-full pt-6">
+                    <h3 class="text-xl font-semibold mb-4 text-gray-800 border-l-4 border-red-500 pl-3">ข้อมูลสำหรับเข้าสู่ระบบ</h3>
+                    <div class="grid grid-cols-1 md:grid-cols-3 gap-4">
+                        <div>
+                            <label class="block text-base font-medium mb-1 text-gray-700">อีเมล *</label>
+                            <input name="email" type="email" required class="form-input">
+                        </div>
+                        <div>
+                            <label class="block text-base font-medium mb-1 text-gray-700">รหัสผ่าน *</label>
+                            <input name="password" type="password" required class="form-input">
+                        </div>
+                        <div>
+                            <label class="block text-base font-medium mb-1 text-gray-700">ยืนยันรหัสผ่าน *</label>
+                            <input name="confirmPassword" type="password" required class="form-input">
+                            <div id="restPasswordError" class="text-red-500 text-sm mt-1 hidden">รหัสผ่านไม่ตรงกัน</div>
+                        </div>
+                    </div>
+                </div>
+
+            </div>
+
+            <div class="flex space-x-4 mt-8">
+                <button type="submit" class="flex-1 text-white font-bold py-3 rounded-lg shadow-md bg-red-700 hover:bg-red-800 transition duration-150">
+                    ลงทะเบียนร้าน
+                </button>
+                <button type="button" onclick="window.location.reload()" class="flex-1 bg-gray-300 hover:bg-gray-400 text-gray-800 font-bold py-3 rounded-lg transition duration-150">
+                    ยกเลิก / ล้างฟอร์ม
+                </button>
+            </div>
+        </form>
+    </div>
+
+<script>
+// =========================================================
+// === FIREBASE CONFIGURATION & INIT (กรุณาเปลี่ยนเป็น Config ของคุณ) ===
+// =========================================================
+const firebaseConfig = {
+    apiKey: "AIzaSyCf9n879y-0KmwZ6MB-fPHH2el9SW3ostg", // <-- เปลี่ยนเป็น apiKey ของคุณ
+    authDomain: "kinhoncnx.firebaseapp.com",
+    projectId: "kinhoncnx",
+    storageBucket: "kinhoncnx.firebasestorage.app",
+    messagingSenderId: "771596037544",
+    appId: "1:771596037544:web:a48581dc40d82c1867c19d",
+    measurementId: "G-5DSS0LFEQZ"
+};
+firebase.initializeApp(firebaseConfig);
+const db = firebase.firestore();
+const storage = firebase.storage();
+const auth = firebase.auth();
+
+let restaurants = []; // เก็บข้อมูลร้านค้าไว้ตรวจสอบอีเมลซ้ำ
+
+// =========================================================
+// === UI HELPER FUNCTIONS (สำหรับเติมค่า Dropdown และ Checkbox) ===
+// =========================================================
+document.addEventListener('DOMContentLoaded', () => {
+    const daySelect = document.getElementById('joinDay');
+    const monthSelect = document.getElementById('joinMonth');
+    const yearSelect = document.getElementById('joinYear');
+    
+    // Days (1-31)
+    for (let i = 1; i <= 31; i++) {
+        const day = i.toString().padStart(2, '0');
+        daySelect.innerHTML += `<option value="${day}">${day}</option>`;
+    }
+
+    // Months (1-12)
+    const thaiMonths = ["มกราคม", "กุมภาพันธ์", "มีนาคม", "เมษายน", "พฤษภาคม", "มิถุนายน", "กรกฎาคม", "สิงหาคม", "กันยายน", "ตุลาคม", "พฤศจิกายน", "ธันวาคม"];
+    thaiMonths.forEach((month, index) => {
+        monthSelect.innerHTML += `<option value="${index + 1}">${month}</option>`;
+    });
+
+    // Years (10 ปี ย้อนหลัง)
+    const currentYear = new Date().getFullYear();
+    for (let i = 0; i < 10; i++) {
+        const year = currentYear - i;
+        yearSelect.innerHTML += `<option value="${year}">${year}</option>`;
+    }
+
+    // โหลดข้อมูลร้านค้าเพื่อเช็คอีเมลซ้ำ
+    loadDataFromFirebase();
+});
+
+// ฟังก์ชันสำหรับเปิด/ปิด 24 ชั่วโมง
+document.getElementById('open24Hours').addEventListener('change', function() {
+    const openTime = document.getElementById('restOpenTime');
+    const closeTime = document.getElementById('restCloseTime');
+
+    if (this.checked) {
+        openTime.value = '00:00';
+        closeTime.value = '23:59';
+        openTime.disabled = true;
+        closeTime.disabled = true;
+    } else {
+        openTime.value = '';
+        closeTime.value = '';
+        openTime.disabled = false;
+        closeTime.disabled = false;
+    }
+});
+
+// ฟังก์ชันสำหรับเลือกเปิดทุกวัน
+document.getElementById('openEveryDay').addEventListener('change', function() {
+    const daysCheckboxes = document.getElementById('daysCheckboxes').querySelectorAll('input[type="checkbox"]');
+    daysCheckboxes.forEach(checkbox => {
+        checkbox.checked = this.checked;
+        checkbox.disabled = this.checked;
+    });
+});
+
+
+// =========================================================
+// === FIREBASE HELPER FUNCTIONS (ส่วนนี้ไม่จำเป็นต้องแก้ไข) ===
+// =========================================================
+
+async function loadDataFromFirebase() {
+    try {
+        const restaurantsSnapshot = await db.collection('restaurants').get();
+        restaurants = restaurantsSnapshot.docs.map(doc => doc.data());
+    } catch (err) {
+        console.error('Error loading restaurant data:', err);
+    }
+}
+
+async function uploadImage(file, path) {
+    try {
+        const storageRef = storage.ref().child(path);
+        const snapshot = await storageRef.put(file);
+        const downloadURL = await snapshot.ref.getDownloadURL();
+        return downloadURL;
+    } catch (error) {
+        console.error('Error uploading image:', error);
+        return null;
+    }
+}
+
+async function uploadMultipleImages(files, restaurantId) {
+    const uploadPromises = [];
+    const imageUrls = [];
+
+    if (files.length > 30) {
+        alert("อัปโหลดรูปภาพได้สูงสุด 30 รูปเท่านั้น!");
+        return [];
+    }
+    
+    for (let i = 0; i < files.length; i++) {
+        const file = files[i];
+        const path = `restaurant_images/${restaurantId}/${Date.now()}_${file.name}`;
+        
+        const promise = uploadImage(file, path).then(url => {
+            if (url) {
+                imageUrls.push(url);
+            }
+        });
+        uploadPromises.push(promise);
+    }
+
+    await Promise.all(uploadPromises);
+    return imageUrls;
+}
+
+async function saveUserToFirebase(userData) {
+    try {
+        await db.collection('users').doc(userData.id.toString()).set(userData);
+        return true;
+    } catch (err) {
+        console.error(err);
+        return false;
+    }
+}
+
+async function saveRestaurantToFirebase(restaurantData) {
+    try {
+        // ใช้ set() แทน add() เพื่อกำหนด ID จาก Firestore ก่อน
+        await db.collection('restaurants').doc(restaurantData.id.toString()).set(restaurantData);
+        return true;
+    } catch (err) {
+        console.error(err);
+        return false;
+    }
+}
+
+
+// =========================================================
+// === FUNCTION REGISTER RESTAURANT (หัวใจสำคัญ) ===
+// =========================================================
+
+async function registerRestaurant(event) {
+    event.preventDefault();
+    const form = event.target;
+    const formData = new FormData(form);
+    const data = {};
+    const daysOpenArr = [];
+
+    // 1. รวบรวมข้อมูล
+    for (let [key, value] of formData.entries()) {
+        // จัดการ Checkbox ของ daysOpen[] ที่มีหลายค่า
+        if (key === 'daysOpen[]') {
+            daysOpenArr.push(value); 
+        } else {
+            data[key] = value;
+        }
+    }
+    
+    // กำหนดค่า daysOpen สุดท้าย
+    data.daysOpen = '';
+    if (data.openEveryDay === 'on' || daysOpenArr.length === 7) {
+        data.daysOpen = 'ทุกวัน';
+    } else if (daysOpenArr.length > 0) {
+        data.daysOpen = daysOpenArr.join(', ');
+    }
+
+
+    const password = data.password;
+    const confirmPassword = data.confirmPassword;
+    const email = data.email;
+    const images = form.elements['images'].files;
+
+    // 2. ตรวจสอบรหัสผ่าน
+    if (password !== confirmPassword) {
+        document.getElementById('restPasswordError').classList.remove('hidden');
+        alert('รหัสผ่านและการยืนยันรหัสผ่านไม่ตรงกัน');
+        return;
+    }
+    document.getElementById('restPasswordError').classList.add('hidden');
+
+    // 3. ตรวจสอบว่าอีเมลถูกใช้โดยร้านอื่นแล้วหรือยัง
+    if (restaurants.some(r => r.email === email)) { 
+        alert('ลงทะเบียนไม่สำเร็จ: อีเมลนี้ถูกใช้ลงทะเบียนร้านค้าอื่นแล้ว');
+        return;
+    }
+    
+    // 4. แสดงสถานะโหลด
+    const submitBtn = form.querySelector('button[type="submit"]');
+    const originalText = submitBtn.textContent;
+    submitBtn.textContent = 'กำลังลงทะเบียน...';
+    submitBtn.disabled = true;
+    
+    try {
+        // 5. ลงทะเบียน Firebase Auth ด้วยอีเมล/รหัสผ่าน
+        const userCredential = await auth.createUserWithEmailAndPassword(email, password);
+        const uid = userCredential.user.uid;
+
+        // 6. กำหนด ID และอัปโหลดรูปภาพ
+        const newRestaurantId = db.collection('restaurants').doc().id; 
+        const imageUrls = await uploadMultipleImages(images, newRestaurantId);
+        
+        if (images.length > 0 && imageUrls.length === 0) {
+            throw new Error("เกิดข้อผิดพลาดในการอัปโหลดรูปภาพทั้งหมด");
+        }
+        
+        // จัดการวันที่เข้าร่วม
+        const joinDate = `${data.joinYear}-${data.joinMonth.toString().padStart(2, '0')}-${data.joinDay.toString().padStart(2, '0')}`;
+
+        // 7. เตรียมข้อมูลร้านค้า
+        const restaurantData = {
+            id: newRestaurantId,
+            uid: uid,
+            name: data.name,
+            joinDate: joinDate,
+            email: email,
+            cuisineType: data.cuisineType,
+            priceRange: data.priceRange, 
+            conditions: data.conditions || '',
+            phoneNumber: data.phoneNumber,
+            address: data.address,
+            googleMapsLink: data.googleMapsLink || '',
+            facebookLink: data.facebookLink || '',
+            openingTime: data.open24Hours === 'on' ? '00:00' : data.openingTime || '',
+            closingTime: data.open24Hours === 'on' ? '23:59' : data.closingTime || '',
+            open24Hours: data.open24Hours === 'on',
+            daysOpen: data.daysOpen, // ใช้ค่าที่รวมแล้ว
+            images: imageUrls,
+            status: 'pending', 
+            role: 'restaurant',
+            createdAt: new Date().toISOString()
+        };
+        
+        // 8. บันทึกข้อมูลร้านค้าลง Firestore
+        await saveRestaurantToFirebase(restaurantData);
+
+        // 9. บันทึกข้อมูลผู้ใช้งาน (สำหรับล็อกอิน)
+        const userData = {
+            id: uid,
+            email: email,
+            role: 'restaurant',
+            restaurantId: newRestaurantId,
+            createdAt: new Date().toISOString()
+        };
+        await saveUserToFirebase(userData);
+        
+        alert('ลงทะเบียนร้านสำเร็จ! ข้อมูลของคุณจะถูกตรวจสอบโดยเจ้าหน้าที่');
+        
+        form.reset();
+        loadDataFromFirebase(); // โหลดข้อมูลร้านล่าสุด
+
+    } catch (error) {
+        console.error("Error during restaurant registration:", error);
+        
+        // จัดการ Firebase Auth Error
+        if (error.code === 'auth/email-already-in-use') {
+            alert('ลงทะเบียนไม่สำเร็จ: อีเมลนี้ถูกใช้ในระบบ Firebase แล้ว');
+        } else if (error.code === 'auth/weak-password') {
+             alert('ลงทะเบียนไม่สำเร็จ: รหัสผ่านต้องมีความยาวอย่างน้อย 6 ตัวอักษร');
+        } else {
+            alert(`ลงทะเบียนไม่สำเร็จ: ${error.message || 'เกิดข้อผิดพลาดที่ไม่รู้จัก'}`);
+        }
+    } finally {
+        submitBtn.textContent = originalText;
+        submitBtn.disabled = false;
+    }
+}
+</script>
+</body>
+</html>
